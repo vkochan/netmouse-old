@@ -1,0 +1,18 @@
+										TODOes
+								(what should TO be DOne)
+								
+*UDP protocol* 
+Using UDP protocol for events as additional option
+
+*Protocol configuring*
+Possibility to easy change protocol type w/o recompile app.
+Add protocol type to configuration file.
+
+*Shared clipboard*
+Sharing of clipboard on target & remote machine.
+
+*Files exchanging*
+File exchanging by Drag & Drop from target to remote 
+screen and from remote screen to target screen.
+
+*X window version*

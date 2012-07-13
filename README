@@ -1,0 +1,17 @@
+								
+								***** NetMouse *****
+                                  (Network Mouse)
+								  
+Enables to use mouse and keyboard from target computer on remote computer as 
+its was like additional screen.
+
+Program works in client/server way for sending/receiving events for mouse or 
+keyboard through network.
+
+Meanwhile it works only on WinNT system.
+MinGW is used as build tool.
+
+								***** HOWTO USE *****
+For receiving events on remote machine simply run netmouse.exe.
+For connect to remote computers screen you should run netmouse.exe with -s option
+, where -s means server address
