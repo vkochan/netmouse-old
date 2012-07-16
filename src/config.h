@@ -21,6 +21,12 @@
 #ifndef _CONFIG_HEADER_
 #define _CONFIG_HEADER_
 
+struct screen_config
+{
+    int max_x;
+	int max_y;
+};
+
 #define CFG_SERVER_ADDR "server"
 #define CFG_SERVER_PORT "port"
 
@@ -29,6 +35,8 @@
 char *get_server_addr();
 char *get_server_port();
 char *get_app_name();
+
+int get_screen_config(struct screen_config *cfg);
 
 int is_server();
 

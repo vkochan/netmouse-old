@@ -38,7 +38,7 @@ void handle_mouse_click(int btn_click);
 
 bool is_mouse_on_remote();
 
-void do_move_mouse(int x, int y);
+void do_mouse_move(int x, int y);
 
 void do_mouse_click(int btn_click);
 

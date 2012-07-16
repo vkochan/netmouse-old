@@ -38,6 +38,8 @@ char *server_addr = NULL;
 char *server_port = NULL;
 char *app_name = NULL;
 
+struct screen_config screen_cfg;
+
 char *trim_str(char *str, char *trim_chars)
 {
 	char *s = strstr(str, trim_chars);
@@ -311,6 +313,28 @@ char *get_app_name()
 	return app_name;
 }
 
+int get_screen_config(struct screen_config *cfg)
+{
+	
+	if (!cfg)
+	{
+	    return 1;
+	}
+	
+	cfg->max_x = screen_cfg.max_x;
+	cfg->max_y = screen_cfg.max_y;
+	
+	return 0;
+}
+
+void load_screen_config()
+{
+	memset( &screen_cfg, 0, sizeof(struct screen_config) );
+	
+	screen_cfg.max_x = GetSystemMetrics( SM_CXSCREEN );
+	screen_cfg.max_y = GetSystemMetrics( SM_CYSCREEN );
+}
+
 void load_config_file()
 {
 	char *cfg_file_path = get_config_filepath();
@@ -338,4 +362,5 @@ void load_config_file()
 void load_config(int argc, char **args)
 {
 	process_cmd_line(argc, args);
+	load_screen_config();
 }

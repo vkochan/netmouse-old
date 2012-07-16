@@ -28,6 +28,7 @@
 #include "mouse.h"
 #include "event_sender.h"
 #include "log.h"
+#include "config.h"
 
 /*
  * converts windows raw mouse event type into custom type
@@ -87,15 +88,22 @@ int convert_net_to_mouse_event(int net_event)
 /*
  * emulates mouses move by absolute coordinates
  */
-void do_move_mouse(int x, int y)
+void do_mouse_move(int x, int y)
 {
+    struct screen_config scr_cfg; 
+	
+	get_screen_config(&scr_cfg);
+	
+	int n_x = 65535.0f / scr_cfg.max_x - 1;
+	int n_y = 65535.0f / scr_cfg.max_y - 1;	
+	
 	INPUT in;
 	
 	in.type = INPUT_MOUSE;
 	in.mi.time = 0;
 	in.mi.dwExtraInfo = (ULONG_PTR)NULL;
-	in.mi.dx = x;
-	in.mi.dy = y;
+	in.mi.dx = x * n_x;
+	in.mi.dy = y * n_y;
 	in.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
 	
 	SendInput(1, &in, sizeof(INPUT));

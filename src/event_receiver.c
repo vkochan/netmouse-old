@@ -28,9 +28,6 @@
  
 struct event_pipe *recv_pipe;
 
-int n_x = 0;
-int n_y = 0;
-
 /*
  * this funnction is called from server listener and it
  * does nothing than just delegates to real "do" functions for mouse or keyboard
@@ -43,7 +40,7 @@ void on_recv_event_handler(struct input_event *evt)
 		{
 			if (evt->action == EVENT_MOUSE_MOVE)
 			{
-				do_move_mouse(evt->point.x * n_x, evt->point.y * n_y);
+				do_mouse_move(evt->point.x, evt->point.y);
 			}
 			else //its mouse click
 			{
@@ -62,11 +59,7 @@ void on_recv_event_handler(struct input_event *evt)
 } 
 
 void init_event_receiver()
-{
-	//TODO: move this to mouse module
-	n_x = 65535.0f / GetSystemMetrics(SM_CXSCREEN) - 1;
-	n_y = 65535.0f / GetSystemMetrics(SM_CYSCREEN) - 1;
-	
+{	
 	recv_pipe = create_event_pipe(NULL, get_server_port(), EVENT_PIPE_RECV);
 	
 	if (recv_pipe == NULL)
