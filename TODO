@@ -2,11 +2,10 @@
                               (what should TO be DOne)
 								
 *UDP protocol* 
-Using UDP protocol for events as additional option
-
-*Protocol configuring*
-Possibility to easy change protocol type w/o recompile app.
-Add protocol type to configuration file.
+Using UDP protocol for events sending/receiving
+    a) Protocol configuring*
+    b) Possibility to easy change protocol type w/o recompile app.
+    c) Add protocol type to configuration file.
 
 *Shared clipboard*
 Sharing of clipboard on target & remote machine.
@@ -16,3 +15,7 @@ File exchanging by Drag & Drop from target to remote
 screen and from remote screen to target screen.
 
 *X window version*
+
+*System Tray Manager*
+Get rid from console version and execute as windows GUI app
+in SystemTray icon.
