@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-c
 LDFLAGS=-mconsole
 
-SOURCES=netmouse.c service.c input_handler.c mouse.c keybd.c event_pipe.c event_receiver.c event_sender.c config.c
+SOURCES=netmouse.c input_handler.c mouse.c keybd.c event_pipe.c event_receiver.c event_sender.c config.c
 
 LIBS=-lws2_32 -lmswsock -ladvapi32		
 OBJECTS=$(SOURCES:.c=.o)
