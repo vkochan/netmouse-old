@@ -21,7 +21,8 @@
 #ifndef _TYPES_HEADER_
 #define _TYPES_HEADER_
 
-#define bool int
+typedef unsigned char bool;
+
 #define true 1
 #define false 0
 

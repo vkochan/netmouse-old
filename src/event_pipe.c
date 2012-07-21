@@ -224,7 +224,7 @@ DWORD WINAPI client_connector( void *data )
 /*
  * creates event pipe object and related socket
  */
-struct event_pipe *create_event_pipe(char *addr, char *port, int type)
+struct event_pipe *create_event_pipe( char *addr, char *port, int type )
 {
 	struct event_pipe *evt_pipe = NULL;
 	struct addrinfo *addr_info = NULL, hints;
