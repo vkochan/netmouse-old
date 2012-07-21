@@ -21,6 +21,8 @@
 #ifndef _CONFIG_HEADER_
 #define _CONFIG_HEADER_
 
+#include "types.h"
+
 struct screen_config
 {
     int max_x;
@@ -41,5 +43,9 @@ int get_screen_config(struct screen_config *cfg);
 int is_server();
 
 void load_config();
+
+bool is_test_mode();
+
+#define IS_TEST_MODE ( is_test_mode() )
 
 #endif

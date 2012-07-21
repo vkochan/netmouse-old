@@ -18,7 +18,7 @@
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
 
-#include "defs.h"
+#include "common.h"
  
 #include <windows.h>
 #include <stdlib.h>
@@ -26,14 +26,16 @@
 #include <string.h>
 
 #include "mouse.h"
-#include "event_sender.h"
+#include "input_event.h"
 #include "log.h"
 #include "config.h"
+#include "input_handler.h"
+#include "screen.h"
 
 /*
  * converts windows raw mouse event type into custom type
  */
-int convert_to_mouse_net_event(int event_val)
+int convert_to_mouse_net_event( int event_val )
 {
 	switch(event_val)
 	{
@@ -60,7 +62,7 @@ int convert_to_mouse_net_event(int event_val)
  * converts custom mouse event type into windows event mouse value
  * for send input function
  */
-int convert_net_to_mouse_event(int net_event)
+int convert_net_to_mouse_event( int net_event )
 {
 	switch(net_event)
 	{
@@ -85,10 +87,35 @@ int convert_net_to_mouse_event(int net_event)
 	return -1;
 }
 
+char *get_action_name ( int act )
+{
+	switch( act )
+	{
+		case EVENT_MOUSE_LEFT_DOWN:
+			return "LEFT DOWN";
+		case EVENT_MOUSE_LEFT_UP:
+			return "LEFT UP";
+		case EVENT_MOUSE_MIDDLE_DOWN:
+			return "MIDDLE DOWN";
+		case EVENT_MOUSE_MIDDLE_UP:
+			return "MIDDLE UP";
+		case EVENT_MOUSE_RIGHT_DOWN:
+			return "RIGHT DOWN";
+		case EVENT_MOUSE_RIGHT_UP:
+			return "RIGHT UP";
+		case EVENT_MOUSE_WHEEL:
+			return "WHEEL";
+		case EVENT_MOUSE_MOVE:
+			return "MOVE";
+	}
+
+	return "UNKNOWN";
+}
+
 /*
  * emulates mouses move by absolute coordinates
  */
-void do_mouse_move(int x, int y)
+void do_mouse_move( int x, int y )
 {
     struct screen_config scr_cfg; 
 	
@@ -97,67 +124,113 @@ void do_mouse_move(int x, int y)
 	int n_x = 65535.0f / scr_cfg.max_x - 1;
 	int n_y = 65535.0f / scr_cfg.max_y - 1;	
 	
+	POINT pt;
+	GetCursorPos( &pt );
+	
 	INPUT in;
 	
 	in.type = INPUT_MOUSE;
 	in.mi.time = 0;
-	in.mi.dwExtraInfo = (ULONG_PTR)NULL;
-	in.mi.dx = x * n_x;
-	in.mi.dy = y * n_y;
+	in.mi.dwExtraInfo = ( ULONG_PTR )NULL;
+	in.mi.dx = x  * n_x;
+	in.mi.dy = ( y + pt.y ) * n_y; //yeah, really y means offset from y position ...
 	in.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
 	
-	SendInput(1, &in, sizeof(INPUT));
+	SendInput( 1, &in, sizeof(INPUT) );
 }
 
 /*
  * emulates mouse click event
  */
-void do_mouse_click(int btn_click)
+void do_mouse_click ( int btn_click )
 {
 	INPUT in;
 	
 	in.type = INPUT_MOUSE;
 	in.mi.time = 0;
-	in.mi.dwExtraInfo = (ULONG_PTR)NULL;
+	in.mi.dwExtraInfo = ( ULONG_PTR )NULL;
 	in.mi.dx = 0;
 	in.mi.dy = 0;
-	in.mi.dwFlags = convert_net_to_mouse_event(btn_click);
+	in.mi.dwFlags = convert_net_to_mouse_event( btn_click );
 	
-	SendInput(1, &in, sizeof(INPUT));
-}
-
-/*
- * creates event_event object for mouse move event
- * and sends it to network event sender layer
- */
-void handle_mouse_move(int x, int y)
-{	
-	struct input_event *evt = (struct input_event *)malloc(sizeof(struct input_event));
-	evt->type = INPUT_MOUSE_EVENT;
-	evt->action = EVENT_MOUSE_MOVE;
-	evt->point.x = x;
-	evt->point.y = y;
-	
-	send_event(evt);
-	
-	free(evt);
+	SendInput( 1, &in, sizeof(INPUT) );
 }
 
 /*
  * creates event_event object for mouse click event
  * and sends it to network event sender layer
  */
-void handle_mouse_click(int btn_click)
+void handle_mouse_click ( int btn_click )
 {
 	struct input_event *evt = (struct input_event *)malloc(sizeof(struct input_event));
 	evt->type = INPUT_MOUSE_EVENT;
-	evt->action = convert_to_mouse_net_event(btn_click);
+	evt->action = convert_to_mouse_net_event( btn_click );
 	evt->point.x = 0;
 	evt->point.y = 0;
 
-	send_event(evt);
+	send_remote_event(evt);
 	
 	free(evt);
 }
 
+int on_mouse_input_handler ( int dx, int dy, int flags )
+{
 
+	update_screen_cursor ( dx, dy );
+
+	if ( is_on_remote_screen() )
+	{
+	    if ( flags > 0 )
+	    {
+	        handle_mouse_click( flags );
+	    }
+
+	    return 1;
+	}
+
+	return 0;
+}
+
+void on_recv_mouse_event ( struct input_event *evt )
+{
+	if ( !evt )
+	{
+		return;
+	}
+	
+	if ( evt->type == INPUT_MOUSE_EVENT )
+	{
+		if ( evt->action == EVENT_MOUSE_MOVE )
+		{
+			if ( IS_TEST_MODE )
+			{
+			    LOG_DEBUG( "received mouse event: move [ x=%d, y=%d ] \n", evt->point.x, evt->point.y );
+			}
+			else
+			{
+			    do_mouse_move( evt->point.x, evt->point.y );
+			}
+		}
+		else //its mouse click
+		{
+			if ( IS_TEST_MODE )
+			{
+			    LOG_DEBUG( "received mouse event: click [ %s ] \n", get_action_name( evt->action ) );
+			}
+			else
+			{
+			    do_mouse_click( evt->action );
+			}
+		}
+	}
+}
+
+void init_mouse ()
+{
+	register_mouse_handler( on_mouse_input_handler );
+    
+	if( register_event_receiver( INPUT_MOUSE_EVENT, on_recv_mouse_event ) == 0 )
+    {
+	    LOG_DEBUG("registered mouse event receiver \n");
+	}	
+}

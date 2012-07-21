@@ -20,11 +20,18 @@
  
 #ifndef _INPUT_HANDLER_HEADER_
 #define _INPUT_HANDLER_HEADER_
+
+typedef int ( * mouse_handler_t ) ( int dx, int dy, int flags );
+typedef int ( * keybd_handler_t ) ( int vcode, int flags ) ;
  
 void init_input_handler();
 
 void cleanup_input_handlers();
 
 void disable_remote_events();
+
+void register_mouse_handler (int (* handler ) (  int dx, int dy, int flags ) );
+
+void register_keybd_handler (int (* handler ) ( int vcode, int flags ) );
 
 #endif

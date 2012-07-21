@@ -18,7 +18,7 @@
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
  
-#include "defs.h"
+#include "common.h"
 
 #include <windows.h>
 #include <string.h>
@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "log.h"
+#include "types.h"
 
 #define CFG_MAX_LINE 1024
 #define CFG_DELIMITERS " \t="
@@ -39,6 +40,12 @@ char *server_port = NULL;
 char *app_name = NULL;
 
 struct screen_config screen_cfg;
+bool _is_test_mode = FALSE;
+
+bool is_test_mode()
+{
+    return _is_test_mode;
+}
 
 char *trim_str(char *str, char *trim_chars)
 {
@@ -246,48 +253,34 @@ int process_cmd_line(int argc, char **args)
 	
 	while(idx < argc)
 	{	
-		if(strcmp(args[idx], "-s") == 0)
+		if( strcmp( args[idx], "-s" ) == 0 )
 		{
 			//check if its last argument
-			if (argc - idx == 1)
+			if ( argc - idx == 1 )
 			{
 				LOG_ERROR("parameter [-s] requires address:port value\n");
 				return 1;
 			}
 			
-			server_addr = args[++idx];
+			server_addr = args[ ++idx ];
 		}
-		else if (strcmp(args[idx], "-p") == 0)
+		else if ( strcmp( args[ idx ], "-p" ) == 0 )
 		{
 			//check if its last argument
-			if (argc - idx == 1)
+			if ( argc - idx == 1 )
 			{
 				LOG_ERROR("parameter [-s] requires address:port value\n");
 				return 1;
 			}
 			
-			server_port = args[++idx];
+			server_port = args[ ++idx ];
+		}
+		else if ( strcmp (args[ idx ], "-t" ) == 0 )
+		{
+		    _is_test_mode = TRUE;
 		}
 		
 		idx++;
-	}
-	
-	/*
-	if (srv_port == NULL)
-	{
-		LOG_ERROR("Cant parse address argument please use format server:port\n", NULL);
-		return 1;
-	}
-	
-	server_addr = strtok(srv_port, ":");
-	server_port = strtok(NULL, ":");
-	
-	*/
-	
-	if (!server_addr)
-	{
-		LOG_ERROR("Cant parse address argument please use format: -s server:port\n");
-		return 1;
 	}
 	
 	return 0;

@@ -51,7 +51,9 @@ struct event_pipe
 	int op_status;
 	int error;
 	int type;
-	void (* on_recv_event)(struct input_event *evt);
+	void *obj; //object which is uses event pipe
+	void (* on_recv_event ) ( struct input_event *evt );
+	void (* on_conn_state ) ( struct event_pipe *evt_pipe ) ;
 };
 
 int do_send_event_pipe(struct event_pipe *evt_pipe, struct input_event *evt);
@@ -59,5 +61,7 @@ int do_send_event_pipe(struct event_pipe *evt_pipe, struct input_event *evt);
 struct event_pipe * create_event_pipe(char *addr, char *port, int type);
 
 int open_event_pipe(struct event_pipe *evt_pipe);
+
+void reopen_event_pipe ( struct event_pipe *evt_pipe );
 
 #endif

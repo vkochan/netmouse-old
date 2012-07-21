@@ -17,13 +17,14 @@
  * 
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
+
+#include "common.h"
  
 #include <windows.h>
 #include <stdio.h>
 
 #include "event_pipe.h"
-#include "event_receiver.h"
-#include "event_sender.h"
+#include "screen.h"
 #include "process.h"
 #include "config.h"
 #include "log.h"
@@ -50,9 +51,7 @@ DWORD WINAPI main_app_loop(LPVOID lpParm)
 {	
 	init_event_pipe();
 	
-	init_event_receiver();
-	
-	init_event_sender();
+	init_screen();
 	
    //prevents event sending if its server ... 
    //may be its bad & it should be fixed
@@ -60,6 +59,9 @@ DWORD WINAPI main_app_loop(LPVOID lpParm)
 	{
 		init_input_handler();
 	}
+	
+	init_mouse();
+	init_keybd();
 	
 	message_loop();
 	
@@ -74,8 +76,13 @@ void run_main_app(int argc, char **cmdl)
 	
 	load_config(argc, cmdl);
 	
-	LOG_INFO("server=%s\n", get_server_addr());
-	LOG_INFO("port=%s\n\n", get_server_port());
+	if ( IS_TEST_MODE )
+	{
+	    LOG_INFO("TEST MODE is ON\n");
+	}
+	
+	LOG_INFO("SERVER: %s\n", get_server_addr());
+	LOG_INFO("PORT: %s\n\n", get_server_port());
 	
 	RUN_PROCESS(main_app_loop, NULL);
 	

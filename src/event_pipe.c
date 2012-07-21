@@ -18,7 +18,7 @@
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
 
-#include "defs.h"
+#include "common.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -41,26 +41,31 @@ struct input_event * alloc_input_event()
 {
 	struct input_event *new_evt = (struct input_event *)malloc(sizeof(struct input_event));
 	
-	if (new_evt)
+	if ( new_evt )
 	{
-		memset(new_evt, sizeof(struct input_event), 0);
+		memset( new_evt, sizeof(struct input_event), 0 );
 		return new_evt;
 	}
 	
 	return NULL;
 }
 
-void free_input_event(struct input_event *evt)
+void free_input_event( struct input_event *evt )
 {
 	free(evt);
 }
 
-void set_event_pipe_state(struct event_pipe *evt_pipe, int state)
+void set_event_pipe_state( struct event_pipe *evt_pipe, int state )
 {
 	evt_pipe->conn_state = state;
+	
+	if ( evt_pipe->on_conn_state )
+	{
+	    evt_pipe->on_conn_state( evt_pipe );
+	}
 }
 
-int get_event_pipe_state(struct event_pipe *evt_pipe)
+int get_event_pipe_state( struct event_pipe *evt_pipe )
 {
 	return evt_pipe->conn_state;
 }
@@ -68,39 +73,39 @@ int get_event_pipe_state(struct event_pipe *evt_pipe)
 /*
  * reads events from remote side socket
  */
-DWORD WINAPI event_receiver(void *data)
+DWORD WINAPI event_receiver( void *data )
 {
 	struct input_event *evt = NULL;
 	struct event_pipe *evt_pipe = (struct event_pipe *)data;
 	
 	int result;
 	
-	if (!evt_pipe)
+	if ( !evt_pipe )
 	{
 		return 1;
 	}
 	
-	if (!evt_pipe->on_recv_event)
+	if ( !evt_pipe->on_recv_event )
 	{
 		return 1;
 	}
 	
 	evt = alloc_input_event();
 	
-	if (evt == NULL)
+	if ( evt == NULL )
 	{
 		return 1;
 	};
 
 	// Receive until the peer shuts down the connection
 	do {
-		memset(&evt, sizeof(struct input_event), 0);
+		memset( &evt, sizeof(struct input_event), 0 );
 		
 		//LOG_DEBUG("try to receive event ...\n");
-		result = recv(evt_pipe->from_sck, (char *)evt, sizeof(struct input_event), 0);
+		result = recv( evt_pipe->from_sck, (char *)evt, sizeof(struct input_event), 0 );
 		
 		if (result > 0) {
-			evt_pipe->on_recv_event(evt);
+			evt_pipe->on_recv_event( evt );
 		} else
 		{
 			if (result == 0)
@@ -110,8 +115,8 @@ DWORD WINAPI event_receiver(void *data)
 			}
 			else 
 			{
-				LOG_ERROR("recv failed: %d\n", WSAGetLastError());
-				closesocket(evt_pipe->from_sck);
+				LOG_ERROR( "recv failed: %d\n", WSAGetLastError() );
+				closesocket( evt_pipe->from_sck );
 				evt_pipe->from_sck = INVALID_SOCKET;
 				return 1;
 			}
@@ -123,7 +128,7 @@ DWORD WINAPI event_receiver(void *data)
 /*
  * listens for events from client
  */
-DWORD WINAPI server_listener(void *data)
+DWORD WINAPI server_listener( void *data )
 {
 	struct event_pipe *evt_pipe = (struct event_pipe *)data;
 	SOCKET client = INVALID_SOCKET;
@@ -132,6 +137,8 @@ DWORD WINAPI server_listener(void *data)
 	{
 		return 1;
 	}
+	
+	set_event_pipe_state ( evt_pipe, EVENT_PIPE_LISTENNING );
 	
 	while(1)
 	{
@@ -144,6 +151,8 @@ DWORD WINAPI server_listener(void *data)
 		else
 		{
 			LOG_DEBUG("Connection accepted\n");
+			
+			set_event_pipe_state( evt_pipe, EVENT_PIPE_ACCEPTED );
 			
 			evt_pipe->from_sck = client;
 			
@@ -159,63 +168,54 @@ DWORD WINAPI server_listener(void *data)
  * tries to connect to server when connection is closed
  * runs in separated thread
  */ 
-DWORD WINAPI client_connector(void *data)
+DWORD WINAPI client_connector( void *data )
 {
 	struct event_pipe *evt_pipe = (struct event_pipe *)data;
 	int result;
     fd_set write_s;
     struct timeval time_out;
 	
-	if (get_event_pipe_state(evt_pipe) == EVENT_PIPE_CONNECTING)
+	if ( get_event_pipe_state( evt_pipe ) == EVENT_PIPE_CONNECTING )
 	{
 	    return 0;
 	}
 	
-	set_event_pipe_state(evt_pipe, EVENT_PIPE_CONNECTING);
+	set_event_pipe_state( evt_pipe, EVENT_PIPE_CONNECTING );
 	
-	FD_ZERO (&write_s);
-    FD_SET (evt_pipe->sck, &write_s); 
+	FD_ZERO( &write_s );
+    FD_SET( evt_pipe->sck, &write_s ); 
     time_out.tv_sec = 0;
     time_out.tv_usec = 500000;
 	
 	while(1)
 	{
 		// Connect to server.
-		result = connect(evt_pipe->sck, evt_pipe->addr_info->ai_addr, (int)evt_pipe->addr_info->ai_addrlen);
+		result = connect( evt_pipe->sck, evt_pipe->addr_info->ai_addr, (int)evt_pipe->addr_info->ai_addrlen );
 		
 		if (result == SOCKET_ERROR)
 		{
-			LOG_ERROR("Error while connection to server: %ld\n", WSAGetLastError());
+		    int err = WSAGetLastError();
 			
-			Sleep(1000);
-			/*if (evt_pipe->conn_state == EVENT_PIPE_CONNECTING)
+			LOG_ERROR("Error while connection to server: %ld\n", err );
+		    
+			if ( err == WSAEISCONN )
 			{
+			    reopen_event_pipe( evt_pipe );
 				continue;
 			}
 			
-			while(1)
-			{
-				if ((result = select(0, NULL, &write_s, NULL, NULL)) == SOCKET_ERROR) 
-				{
-					set_event_pipe_state(evt_pipe, EVENT_PIPE_CONNECTION_ERROR);
-					break;//lets try to connect
-				}
-				else
-				{
-					//Sleep(CONNECTION_CHECK_TIME);
-				}
-			}	*/
+			Sleep( CONNECTION_CHECK_TIME );
 		}
 		else
 		{
 			LOG_DEBUG("Connected to server\n");
-			set_event_pipe_state(evt_pipe, EVENT_PIPE_CONNECTED);
+			set_event_pipe_state( evt_pipe, EVENT_PIPE_CONNECTED );
 			
 			u_long iMode = 1;
-			ioctlsocket(evt_pipe->sck,FIONBIO,&iMode);
+			ioctlsocket( evt_pipe->sck, FIONBIO, &iMode );
 			
 			int one = 1;
-			setsockopt(evt_pipe->sck, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+			setsockopt( evt_pipe->sck, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one) );
 			return 0;
 		}
 	}
@@ -224,33 +224,31 @@ DWORD WINAPI client_connector(void *data)
 /*
  * creates event pipe object and related socket
  */
-struct event_pipe * create_event_pipe(char *addr, char *port, int type)
+struct event_pipe *create_event_pipe(char *addr, char *port, int type)
 {
 	struct event_pipe *evt_pipe = NULL;
 	struct addrinfo *addr_info = NULL, hints;
 	SOCKET sck = INVALID_SOCKET;
 	int iResult;
 
-	evt_pipe = (struct event_pipe *)malloc(sizeof(struct event_pipe));
-	memset(evt_pipe, sizeof(evt_pipe), 0);
+	evt_pipe = (struct event_pipe *)malloc( sizeof( struct event_pipe ) );
+	memset( evt_pipe, 0, sizeof(evt_pipe) );
 	
-	evt_pipe->on_recv_event = NULL;
-	
-	if (evt_pipe == NULL)
+	if ( evt_pipe == NULL )
 	{
 		LOG_FATAL("Cant alloc memory for event_pipe\n");
 	}
 	
 	ZeroMemory( &hints, sizeof(hints) );
 	
-	if (type == EVENT_PIPE_RECV)
+	if ( type == EVENT_PIPE_RECV )
 	{
 		hints.ai_family = AF_INET;
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = IPPROTO_TCP;
 		hints.ai_flags = AI_PASSIVE;
 	}
-	else if(type == EVENT_PIPE_SEND)
+	else if( type == EVENT_PIPE_SEND )
 	{
 		hints.ai_family = AF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
@@ -258,7 +256,7 @@ struct event_pipe * create_event_pipe(char *addr, char *port, int type)
 	}
 
 	// Resolve the server address and port
-	iResult = getaddrinfo(addr, port, &hints, &addr_info);
+	iResult = getaddrinfo( addr, port, &hints, &addr_info );
 	if (iResult != 0) {
 		LOG_FATAL("getaddrinfo failed for %s:%s : error %d\n",addr, port, iResult);
 		WSACleanup();
@@ -333,7 +331,7 @@ int open_event_pipe(struct event_pipe *evt_pipe)
  */
 int do_send_event_pipe(struct event_pipe *evt_pipe, struct input_event *evt)
 {
-	if(evt_pipe->conn_state == EVENT_PIPE_CONNECTED)
+	if( evt_pipe->conn_state == EVENT_PIPE_CONNECTED )
 	{
 		int iResult;
 		int errno;
@@ -350,9 +348,10 @@ int do_send_event_pipe(struct event_pipe *evt_pipe, struct input_event *evt)
 			
 			evt_pipe->op_status = SEND_FAILURE;
 			evt_pipe->error = WSAGetLastError();
-			evt_pipe->conn_state = EVENT_PIPE_DISCONNECTED;
 			
-			RUN_PROCESS(client_connector, evt_pipe);
+			set_event_pipe_state( evt_pipe, EVENT_PIPE_DISCONNECTED );
+			
+			RUN_PROCESS( client_connector, evt_pipe );
 			return -1;
 		}
 		else
@@ -366,6 +365,14 @@ int do_send_event_pipe(struct event_pipe *evt_pipe, struct input_event *evt)
 	return -1;
 }
 
+void reopen_event_pipe ( struct event_pipe *evt_pipe )
+{
+	closesocket( evt_pipe->sck );
+	
+	// Create a SOCKET for connecting to server
+	evt_pipe->sck = socket( evt_pipe->addr_info->ai_family, evt_pipe->addr_info->ai_socktype, evt_pipe->addr_info->ai_protocol );
+}
+
 /*
  * initialization of event pipe module
  */
@@ -376,7 +383,7 @@ void init_event_pipe()
 	// Initialize Winsock
 	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 	
-	if (iResult != 0) 
+	if ( iResult != 0 ) 
 	{
 		LOG_FATAL("WSAStartup failed: %d\n", iResult);
 	}

@@ -18,13 +18,16 @@
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
 
-#include "defs.h"
+#include "common.h"
 
 #include <windows.h>
 #include <stdlib.h>
+#include <stdio.h>
 
-#include "event_sender.h"
+#include "input_handler.h"
+#include "screen.h"
 #include "log.h"
+#include "config.h"
 
 #define KEYBD_PRESS_UP   0
 #define KEYBD_PRESS_DOWN 1
@@ -57,19 +60,67 @@ void do_keybd_press(int action, int vkey, int flags)
 	SendInput(1, &in, sizeof(INPUT));
 }
 
-int handle_keybd_action(int vkey, int flags)
+int on_keybd_input_handler(int vkey, int flags)
 {
+	if ( !is_on_remote_screen() )
+	{
+	    return 0;
+	}
+	
 	struct input_event *evt = (struct input_event *)malloc(sizeof(struct input_event));
 	
 	if (!evt)
 	{
-		return -1;
+		return 0;
 	}
 	
 	evt->type = INPUT_KEYBD_EVENT;
-	evt->action = is_keyup(flags) ? KEYBD_PRESS_UP : KEYBD_PRESS_DOWN;
+	evt->action = is_keyup( flags ) ? KEYBD_PRESS_UP : KEYBD_PRESS_DOWN;
 	evt->keybd.vkey = vkey;
 	evt->keybd.flags = 0;
 	
-	send_event(evt);
+	send_remote_event(evt);
+	
+	return 1;
+}
+
+void on_recv_keybd_event ( struct input_event *evt )
+{
+    if ( !evt )
+	{
+		LOG_ERROR("received empty event \n");
+	}
+	
+	if ( IS_TEST_MODE )
+	{
+	    char key_name[ 32 ] = { 0 };
+		char *action_name = NULL;
+
+        if ( evt->action == KEYBD_PRESS_DOWN )
+        {
+		    action_name = "PRESSED UP";
+		}
+		else if ( evt->action == KEYBD_PRESS_UP )
+		{
+		    action_name = "PRESSED DOWN";
+		}
+		
+		GetKeyNameText(MAKELONG(0, MapVirtualKey(evt->keybd.vkey, 0)), key_name, 32);
+		
+		LOG_DEBUG("received keybd event [ %s %s ] \n", key_name, action_name );
+	}
+	else
+	{
+	    do_keybd_press( evt->action, evt->keybd.vkey,  evt->keybd.flags );
+	}
+}
+
+void init_keybd()
+{
+    register_keybd_handler( on_keybd_input_handler );
+	
+	if( register_event_receiver( INPUT_KEYBD_EVENT, on_recv_keybd_event ) == 0 )
+    {
+	    LOG_DEBUG("registered keyboard event receiver \n");
+	}
 }

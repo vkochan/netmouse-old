@@ -18,7 +18,7 @@
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
 
-#include "defs.h"
+#include "common.h"
 
 #include <windows.h>
 #include <stdio.h>
@@ -27,140 +27,52 @@
 #include "keybd.h"
 #include "log.h"
 #include "config.h"
+#include "types.h"
+#include "input_handler.h"
 
 #define BLOCK_INPUT() return 1
 
-#define NORMAL_SCREEN -1
-#define LEFT_SCREEN    0
-#define RIGHT_SCREEN   1
-
+bool is_input_blocked = FALSE;
 HHOOK hMouseHook;
 HHOOK hKeybdHook;
 
-int maxX;
-int maxY;
-int virt_x = 0;
-int virt_y = 0;
+mouse_handler_t on_mouse_handler = NULL;
+keybd_handler_t on_keybd_handler = NULL;
 
-int curr_scr = -1;
-
-//HACK ... its needed by event_pipe module to unblock
-//input events for apps if we lost connection with server
-void disable_remote_events()
+void register_mouse_handler ( mouse_handler_t handler )
 {
-	curr_scr = NORMAL_SCREEN;
+    if ( handler )
+    {
+        on_mouse_handler = handler;
+    }
 }
 
-/*
- * hides mouse cursor when it touches left or right screen side
- */
-void hide_mouse_cursor()
+void register_keybd_handler ( keybd_handler_t handler )
 {
-	POINT cursor_pos;
-	GetCursorPos(&cursor_pos);
-	SetCursorPos(maxX - 1, cursor_pos.y);
+    if ( handler )
+    {
+        on_keybd_handler = handler;
+    }
 }
 
-/*
- * shows mouse cursor when virtual x coord (virt_x) 
- * is between 0 & maxX (max screen width)
- */
-void show_mouse_cursor(int screen_type)
+int do_handle_mouse ( int dx, int dy, int flags )
 {
-	POINT cursor_pos;
+    if ( on_mouse_handler )
+    {
+        return on_mouse_handler (dx, dy, flags );
+    }
 	
-	if (screen_type == LEFT_SCREEN)
-	{
-		GetCursorPos(&cursor_pos);
-		SetCursorPos(1, cursor_pos.y);
-	}
-	else if (screen_type == RIGHT_SCREEN)
-	{
-		GetCursorPos(&cursor_pos);
-		SetCursorPos(maxX-2, cursor_pos.y);
-	}
+	return 0;
 }
 
-/*
- * checks if mouse is on one of the remote screen (right or left)
- */
-bool is_on_remote_screen()
+int do_handle_keybd (int vkey, int flags )
 {
-	return (curr_scr == RIGHT_SCREEN || curr_scr == LEFT_SCREEN);
-}
-
-/*
- * calculates the screen side which cursor has touched
- */
-void calc_selected_screen()
-{
-	POINT cursorPos;
-	GetCursorPos(&cursorPos);
+    if ( on_keybd_handler )
+    {
+        return on_keybd_handler ( vkey, flags );
+    }
 	
-	if (curr_scr == NORMAL_SCREEN)
-	{
-		if (cursorPos.x >= maxX - 1)
-		{
-			curr_scr = RIGHT_SCREEN;
-		}
-		else if (cursorPos.x <= 0)
-		{
-			curr_scr = LEFT_SCREEN;
-		}
-	}
-}
-
-/*
- * updates virtual coordinates (virt_x & virt_y)
- * dx & dy are relatave values on which cursor was moved
- * calculation depends at which screen side we are
- */
-void calc_virt_coord(int dx, int dy)
-{
-	calc_selected_screen();
-	
-	if (curr_scr != NORMAL_SCREEN)
-	{
-		virt_x += dx;
-		virt_y += dy;
-	}
-	
-	if (curr_scr == RIGHT_SCREEN)
-	{	
-		if (virt_x < 0)
-		{
-			virt_x = 0;
-		}
-		
-		if (virt_y < 0)
-		{
-			virt_y = 0;
-		}
-		
-		if (virt_x <= 0)
-		{
-			curr_scr = NORMAL_SCREEN;
-			show_mouse_cursor(RIGHT_SCREEN);
-		}
-	}
-	else if (curr_scr == LEFT_SCREEN)
-	{	
-		if (virt_x >= 0)
-		{
-			virt_x = 0;
-		}
-		
-		if (virt_y >= 0)
-		{
-			virt_y = 0;
-		}
-		
-		if (virt_x >= 0)
-		{
-			curr_scr = NORMAL_SCREEN;
-			show_mouse_cursor(LEFT_SCREEN);
-		}
-	}
+	return 0;
 }
 
 /*
@@ -201,21 +113,9 @@ LRESULT CALLBACK raw_input_device_handler(HWND hwnd, UINT msg, WPARAM wParam, LP
             {
 				if (buffer->header.dwType == RIM_TYPEMOUSE)
 				{
-					calc_virt_coord(buffer->data.mouse.lLastX, buffer->data.mouse.lLastY);
-						
-					if (is_on_remote_screen())
-					{
-						if (buffer->data.mouse.lLastX && buffer->data.mouse.lLastY)
-						{
-							hide_mouse_cursor();
-							handle_mouse_move(virt_x, virt_y);
-						}
-						
-						if (buffer->data.mouse.usButtonFlags > 0)
-						{
-							handle_mouse_click(buffer->data.mouse.usButtonFlags);
-						}
-					}
+				
+					is_input_blocked = do_handle_mouse( buffer->data.mouse.lLastX, 
+						buffer->data.mouse.lLastY, buffer->data.mouse.usButtonFlags);     
 				}
             }
          
@@ -282,9 +182,8 @@ __declspec(dllexport) LRESULT CALLBACK keybd_hook(int nCode, WPARAM wParam, LPAR
 	
 	if (keybdInfo != NULL)
 	{
-		if (is_on_remote_screen())
+		if ( do_handle_keybd( keybdInfo->vkCode, keybdInfo->flags ) )
 		{
-			handle_keybd_action(keybdInfo->vkCode, keybdInfo->flags);
 			BLOCK_INPUT();
 		}
 	}
@@ -302,7 +201,7 @@ __declspec(dllexport) LRESULT CALLBACK mouse_hook(int nCode, WPARAM wParam, LPAR
 
 	if (pMouse != NULL)
 	{
-		if(is_on_remote_screen())
+		if( is_input_blocked )
 		{
 			BLOCK_INPUT();
 		}
@@ -313,12 +212,12 @@ __declspec(dllexport) LRESULT CALLBACK mouse_hook(int nCode, WPARAM wParam, LPAR
 
 static void register_mouse_hook()
 {
-	HINSTANCE hInstance = GetModuleHandle(NULL);
+    HINSTANCE hInstance = GetModuleHandle(NULL);
 	
-	if (!hInstance)
-	{
-		hInstance = LoadLibrary((LPSTR)get_app_name());
-	}
+    if (!hInstance)
+    {
+        hInstance = LoadLibrary((LPSTR)get_app_name());
+    }
 	 
     if (!hInstance)
 	{
@@ -335,17 +234,17 @@ static void register_mouse_hook()
 
 static void unregister_mouse_hook()
 {
-	UnhookWindowsHookEx(hMouseHook);
+    UnhookWindowsHookEx(hMouseHook);
 }
 
 static void register_keybd_hook()
 {
-	HINSTANCE hInstance = GetModuleHandle(NULL);
+    HINSTANCE hInstance = GetModuleHandle(NULL);
 	
-	if (!hInstance)
-	{
-		hInstance = LoadLibrary((LPSTR)get_app_name());
-	}
+    if (!hInstance)
+    {
+        hInstance = LoadLibrary((LPSTR)get_app_name());
+    }
 	 
     if (!hInstance)
 	{
@@ -362,36 +261,29 @@ static void register_keybd_hook()
 
 static void unregister_keybd_hook()
 {
-	UnhookWindowsHookEx(hKeybdHook);
+    UnhookWindowsHookEx(hKeybdHook);
 }
 
 static void register_hooks()
 {
-	register_mouse_hook();
-	register_keybd_hook();
+    register_mouse_hook();
+    register_keybd_hook();
 }
 
 static void unregister_hooks()
 {
-	unregister_mouse_hook();
-	unregister_keybd_hook();
-}
-
-void load_screen_info()
-{
-	maxX = GetSystemMetrics(SM_CXSCREEN);
-	maxY = GetSystemMetrics(SM_CYSCREEN);
+    unregister_mouse_hook();
+    unregister_keybd_hook();
 }
 
 /* initializes all hooks & input handlers */
 void init_input_handler()
 {	
-	load_screen_info();
-	register_hooks();
-	register_raw_input_handler();
+    register_hooks();
+    register_raw_input_handler();
 }
 
 void cleanup_input_handler()
 {
-	unregister_hooks();
+    unregister_hooks();
 }
