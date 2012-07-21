@@ -11,4 +11,6 @@ rm $SRCDIR/$PROGRAM
 $MAKE $MFLAGS $SRCDIR
 
 cp $SRCDIR/$PROGRAM .
+
 rm $SRCDIR/*.o
+rm $SRCDIR/*.res
