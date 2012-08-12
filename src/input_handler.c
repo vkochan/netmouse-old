@@ -29,6 +29,7 @@
 #include "config.h"
 #include "types.h"
 #include "input_handler.h"
+#include "winapi.h"
 
 #define BLOCK_INPUT() return 1
 
@@ -96,7 +97,7 @@ LRESULT CALLBACK raw_input_device_handler(HWND hwnd, UINT msg, WPARAM wParam, LP
              
             if(!RegisterRawInputDevices(&ridMouse, 1, sizeof(RAWINPUTDEVICE)))
             {
-                LOG_FATAL("Registering mouse raw input device failed!\n");
+                LOG_FATAL("Registering mouse raw input device failed!");
                 return -1;
             }
 			
@@ -113,7 +114,6 @@ LRESULT CALLBACK raw_input_device_handler(HWND hwnd, UINT msg, WPARAM wParam, LP
             {
 				if (buffer->header.dwType == RIM_TYPEMOUSE)
 				{
-				
 					is_input_blocked = do_handle_mouse( buffer->data.mouse.lLastX, 
 						buffer->data.mouse.lLastY, buffer->data.mouse.usButtonFlags);     
 				}
@@ -135,40 +135,7 @@ LRESULT CALLBACK raw_input_device_handler(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 void register_raw_input_handler()
 {
-	WNDCLASSEX wc;
-    HWND hwnd;
-    MSG msg;
-	HINSTANCE hInstance;
-	char win_className[] = "NETMOUSE INPUT WINDOW HANDLER";
-
-	hInstance = GetModuleHandle(NULL);
-
-    // register window class
-    ZeroMemory(&wc, sizeof(WNDCLASSEX));
-    wc.cbSize        = sizeof(WNDCLASSEX);
-    wc.lpfnWndProc   = raw_input_device_handler;
-    wc.hInstance     = hInstance;
-    wc.lpszClassName = win_className;
-     
-    if(!RegisterClassEx(&wc))
-    {
-        LOG_FATAL("Window Registration Failed!\n");
-        return ;
-    }
-    // create message-only window
-    hwnd = CreateWindowEx(
-        0,
-        win_className,
-        NULL,
-        0,
-        0, 0, 0, 0,
-        HWND_MESSAGE, NULL, hInstance, NULL
-    );
-    if(!hwnd)
-    {
-        LOG_FATAL("Window Creation Failed!\n");
-        return ;
-    }
+	create_event_window( "NETMOUSE INPUT WINDOW HANDLER", raw_input_device_handler );
 }
 
 /*

@@ -115,7 +115,7 @@ DWORD WINAPI event_receiver( void *data )
 			}
 			else 
 			{
-				LOG_ERROR( "recv failed: %d\n", WSAGetLastError() );
+				LOG_ERROR( "recv failed: %d", WSAGetLastError() );
 				closesocket( evt_pipe->from_sck );
 				evt_pipe->from_sck = INVALID_SOCKET;
 				return 1;
@@ -149,9 +149,7 @@ DWORD WINAPI server_listener( void *data )
 			closesocket(client);
 		}
 		else
-		{
-			LOG_DEBUG("Connection accepted\n");
-			
+		{	
 			set_event_pipe_state( evt_pipe, EVENT_PIPE_ACCEPTED );
 			
 			evt_pipe->from_sck = client;
@@ -196,7 +194,7 @@ DWORD WINAPI client_connector( void *data )
 		{
 		    int err = WSAGetLastError();
 			
-			LOG_ERROR("Error while connection to server: %ld\n", err );
+			LOG_ERROR("Error while connection to server: %ld", err );
 		    
 			if ( err == WSAEISCONN )
 			{
@@ -208,7 +206,6 @@ DWORD WINAPI client_connector( void *data )
 		}
 		else
 		{
-			LOG_DEBUG("Connected to server\n");
 			set_event_pipe_state( evt_pipe, EVENT_PIPE_CONNECTED );
 			
 			u_long iMode = 1;
@@ -236,7 +233,7 @@ struct event_pipe *create_event_pipe( char *addr, char *port, int type )
 	
 	if ( evt_pipe == NULL )
 	{
-		LOG_FATAL("Cant alloc memory for event_pipe\n");
+		LOG_FATAL("Cant alloc memory for event_pipe");
 	}
 	
 	ZeroMemory( &hints, sizeof(hints) );
@@ -258,7 +255,7 @@ struct event_pipe *create_event_pipe( char *addr, char *port, int type )
 	// Resolve the server address and port
 	iResult = getaddrinfo( addr, port, &hints, &addr_info );
 	if (iResult != 0) {
-		LOG_FATAL("getaddrinfo failed for %s:%s : error %d\n",addr, port, iResult);
+		LOG_FATAL("getaddrinfo failed for %s:%s : error %d",addr, port, iResult);
 		WSACleanup();
 		return NULL;
 	}
@@ -267,7 +264,7 @@ struct event_pipe *create_event_pipe( char *addr, char *port, int type )
 	sck = socket(addr_info->ai_family, addr_info->ai_socktype, addr_info->ai_protocol);
 
 	if (sck == INVALID_SOCKET) {
-		LOG_FATAL("Error at socket(): %ld\n", WSAGetLastError());
+		LOG_FATAL("Error at socket(): %ld", WSAGetLastError());
 		WSACleanup();
 		return NULL;
 	}
@@ -276,7 +273,7 @@ struct event_pipe *create_event_pipe( char *addr, char *port, int type )
 	{
 		iResult = bind(sck, addr_info->ai_addr, (int)addr_info->ai_addrlen);
 		if (iResult == SOCKET_ERROR) {
-			LOG_FATAL("bind failed with error: %d\n", WSAGetLastError());
+			LOG_FATAL("bind failed with error: %d", WSAGetLastError());
 			closesocket(sck);
 			WSACleanup();
 			return NULL;
@@ -309,7 +306,7 @@ int open_event_pipe(struct event_pipe *evt_pipe)
 		{	
 			if (listen(evt_pipe->sck, SOMAXCONN) == SOCKET_ERROR) 
 			{
-				LOG_FATAL("Listen failed with error: %ld\n", WSAGetLastError());
+				LOG_FATAL("Listen failed with error: %ld", WSAGetLastError());
 				closesocket(evt_pipe->sck);
 				WSACleanup();
 				return 1;
@@ -344,7 +341,7 @@ int do_send_event_pipe(struct event_pipe *evt_pipe, struct input_event *evt)
 			
 			errno = WSAGetLastError();
 			
-			LOG_ERROR("send failed: %d\n", errno);
+			LOG_ERROR("send failed: %d", errno);
 			
 			evt_pipe->op_status = SEND_FAILURE;
 			evt_pipe->error = WSAGetLastError();
@@ -385,10 +382,10 @@ void init_event_pipe()
 	
 	if ( iResult != 0 ) 
 	{
-		LOG_FATAL("WSAStartup failed: %d\n", iResult);
+		LOG_FATAL("WSAStartup failed: %d", iResult);
 	}
 	
-	LOG_DEBUG("net module is initialized\n", NULL);
+	LOG_DEBUG("net module is initialized", NULL);
 }
 
 /*

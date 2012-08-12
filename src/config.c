@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "config.h"
 #include "log.h"
@@ -42,9 +43,19 @@ char *app_name = NULL;
 struct screen_config screen_cfg;
 bool _is_test_mode = FALSE;
 
+bool is_localhost()
+{
+    if(!server_addr)
+	{
+	    return false;
+	}
+	
+	return ( strcmp( server_addr, "127.0.0.1") == 0 || strcmp( server_addr, "localhost" ) == 0 ); 
+}
+
 bool is_test_mode()
 {
-    return _is_test_mode;
+    return _is_test_mode || is_localhost();
 }
 
 char *trim_str(char *str, char *trim_chars)
@@ -114,7 +125,7 @@ char *get_config_filepath()
 	}
 
 	config_file_path = (char *)malloc(config_path_len + 1);
-	ZeroMemory(config_file_path, config_path_len + 1);
+	memset( config_file_path, 0, config_path_len + 1 );
 	
 	config_file_path = strcat(config_file_path, curr_dir);
 	config_file_path = strcat(config_file_path, "\\");
@@ -201,7 +212,7 @@ char *config_get_value(FILE *f, char *name)
 		return NULL;
 	}
 
-	ZeroMemory(buff, CFG_MAX_LINE);
+	memset(buff, 0, CFG_MAX_LINE);
 
 	while(fgets(buff, CFG_MAX_LINE, fd_config) != NULL)
 	{
@@ -258,7 +269,7 @@ int process_cmd_line(int argc, char **args)
 			//check if its last argument
 			if ( argc - idx == 1 )
 			{
-				LOG_ERROR("parameter [-s] requires address:port value\n");
+				LOG_ERROR("parameter [-s] requires server address value");
 				return 1;
 			}
 			
@@ -269,7 +280,7 @@ int process_cmd_line(int argc, char **args)
 			//check if its last argument
 			if ( argc - idx == 1 )
 			{
-				LOG_ERROR("parameter [-s] requires address:port value\n");
+				LOG_ERROR("parameter [-p] requires server port value");
 				return 1;
 			}
 			
@@ -334,7 +345,7 @@ void load_config_file()
 	
 	if (!cfg_file_path)
 	{
-		LOG_ERROR("Cant load netmouse.config file\n");
+		LOG_ERROR("Cant load netmouse.config file");
 		return;
 	}
 	
@@ -342,18 +353,26 @@ void load_config_file()
 	
 	if (!cfg_file_path)
 	{
-		LOG_ERROR("Cant load netmouse.config file\n");
+		LOG_ERROR("Cant load netmouse.config file");
 		return;
 	}
 	
-	server_addr = config_get_value(fd_config, CFG_SERVER_ADDR);
-	server_port = config_get_value(fd_config, CFG_SERVER_PORT);
+	if (!server_addr)
+	{
+	    server_addr = config_get_value(fd_config, CFG_SERVER_ADDR);
+	}
+	
+	if (!server_port)
+	{
+	    server_port = config_get_value(fd_config, CFG_SERVER_PORT);
+	}
 	
 	fclose(fd_config);
 }
 
-void load_config(int argc, char **args)
+void load_config()
 {
-	process_cmd_line(argc, args);
+    // its not needed for gui app all config is kept in file
+	//process_cmd_line(argc, args);
 	load_screen_config();
 }

@@ -21,15 +21,30 @@
 #ifndef _LOG_HEADER_
 #define _LOG_HEADER_
 
+#define DEBUG_LOG    0
+#define INFO_LOG     1
+#define ERROR_LOG    2
+#define FATAL_LOG    3
+#define WARN_LOG     4
+
+typedef int ( * log_handler_t ) ( int log_type, char *msg);
+
+void set_log_handler( log_handler_t log_handler ); 
+char *get_log_journal();
+
+void do_log( int log_type, char *fmt, ... );
+
 #define DEBUG 1
 							
 #define LOG_DEBUG(fmt, ...) \
-	do { if (DEBUG) printf("[DEBUG] %s:%d:%s(): " fmt,__FILE__ \
+	do { if ( DEBUG ) do_log(DEBUG_LOG, "[DEBUG] %s:%d:%s(): " fmt,__FILE__ \
 							,__LINE__ ,__FUNCTION__,  ## __VA_ARGS__); } while (0)
 
-#define LOG_ERROR(fmt, ...) printf("[ERROR] " fmt, ## __VA_ARGS__)
-#define LOG_WARN(fmt, ...) printf("[WARN] " fmt, ## __VA_ARGS__)
-#define LOG_FATAL(fmt, ...) printf("[FATAL] " fmt, ## __VA_ARGS__)
-#define LOG_INFO(fmt, ...) printf("[INFO] " fmt, ## __VA_ARGS__)
+#define LOG_ERROR(fmt, ...) do_log( ERROR_LOG, "[ERROR] " fmt, ## __VA_ARGS__ )
+#define LOG_WARN(fmt, ...) do_log( WARN_LOG, "[WARN] " fmt, ## __VA_ARGS__ )
+#define LOG_FATAL(fmt, ...) do_log( FATAL_LOG, "[FATAL] " fmt, ## __VA_ARGS__ )
+#define LOG_INFO(fmt, ...) do_log( INFO_LOG, "[INFO] " fmt, ## __VA_ARGS__ )
+
+
 
 #endif

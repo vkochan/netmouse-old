@@ -204,7 +204,7 @@ void on_recv_mouse_event ( struct input_event *evt )
 		{
 			if ( IS_TEST_MODE )
 			{
-			    LOG_DEBUG( "received mouse event: move [ x=%d, y=%d ] \n", evt->point.x, evt->point.y );
+			    LOG_DEBUG( "received mouse event: move [ x=%d, y=%d ]", evt->point.x, evt->point.y );
 			}
 			else
 			{
@@ -215,7 +215,7 @@ void on_recv_mouse_event ( struct input_event *evt )
 		{
 			if ( IS_TEST_MODE )
 			{
-			    LOG_DEBUG( "received mouse event: click [ %s ] \n", get_action_name( evt->action ) );
+			    LOG_DEBUG( "received mouse event: click [ %s ]", get_action_name( evt->action ) );
 			}
 			else
 			{
@@ -231,6 +231,6 @@ void init_mouse ()
     
 	if( register_event_receiver( INPUT_MOUSE_EVENT, on_recv_mouse_event ) == 0 )
     {
-	    LOG_DEBUG("registered mouse event receiver \n");
+	    LOG_DEBUG("registered mouse event receiver");
 	}	
 }

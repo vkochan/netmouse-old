@@ -29,4 +29,10 @@
 		#define WIN32_LEAN_AND_MEAN
 	#endif
 
+	#if defined __GNUC__ && __GNUC__ >= 3
+		typedef __builtin_va_list va_list;
+	#else
+		typedef char* va_list;
+		
+#endif
 #endif

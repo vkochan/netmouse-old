@@ -86,7 +86,7 @@ void do_event_receiving( struct input_event *evt )
 	
 	if ( !evt )
 	{
-	    LOG_ERROR("received empty event \n");
+	    LOG_ERROR("received empty event");
 		return;
 	}
 	
@@ -263,7 +263,7 @@ static void on_connection_changed ( struct event_pipe *evt_pipe )
        
 		case EVENT_PIPE_CONNECTED :
 			scr->status = REMOTE_SCREEN_CONNECTED;
-			LOG_DEBUG("Connected to remote screen \n");
+			LOG_INFO("Connected to remote screen");
 			break;
 
 		case EVENT_PIPE_DISCONNECTED :
@@ -276,12 +276,12 @@ static void on_connection_changed ( struct event_pipe *evt_pipe )
 			
 		case EVENT_PIPE_LISTENNING :
 			scr->status = REMOTE_SCREEN_WAITING;
-			LOG_DEBUG("Waiting for events ...\n");
+			LOG_INFO("Waiting for events ...");
 			break;
 			
         case EVENT_PIPE_ACCEPTED :
 		    scr->status = REMOTE_SCREEN_CONNECTED;
-			LOG_DEBUG("Connected to event pipe \n");
+			LOG_INFO("Connected to sending event pipe");
 			break;
 	}
 }
@@ -361,7 +361,7 @@ int setup_shared_screen ( char *port )
 	shrd_screen->port = port;
 	shrd_screen->orient = SHARED_SCREEN;
 	
-	LOG_DEBUG("starting receiver screen ...\n");
+	LOG_DEBUG("opening shared screen ...");
 	
 	open_event_pipe( evt_pipe );
 	
@@ -408,7 +408,7 @@ void init_screen()
 {
     if ( !get_server_addr() )
 	{
-	    LOG_DEBUG("setup shared screen ...\n");
+	    LOG_DEBUG("setup shared screen ...");
 		setup_shared_screen( get_server_port() );
 	}
 	else

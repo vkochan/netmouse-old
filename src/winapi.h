@@ -17,37 +17,14 @@
  * 
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
- 
-#ifndef _CONFIG_HEADER_
-#define _CONFIG_HEADER_
 
-#include "types.h"
+#ifndef _WINAPI_HEADER_
+#define _WINAPI_HEADER_
 
-struct screen_config
-{
-    int max_x;
-	int max_y;
-};
+typedef BOOL CALLBACK (* wnd_proc )( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam );
 
-#define CFG_SERVER_ADDR "server"
-#define CFG_SERVER_PORT "port"
+HWND create_event_window(char *name, wnd_proc wmain);
 
-#define DEFAULT_SERVER_PORT "12729"
-
-char *get_server_addr();
-char *get_server_port();
-char *get_app_name();
-
-int get_screen_config(struct screen_config *cfg);
-
-int is_server();
-
-void load_config();
-
-bool is_test_mode();
-
-int process_cmd_line( int argc, char **argv );
-
-#define IS_TEST_MODE ( is_test_mode() )
+HWND create_window( char *name, char *title, int x, int y, int width, int heigth, int styles, wnd_proc wmain );
 
 #endif

@@ -18,36 +18,37 @@
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
  
-#ifndef _CONFIG_HEADER_
-#define _CONFIG_HEADER_
+#include "common.h"
+#include "log.h"
 
-#include "types.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-struct screen_config
+static log_handler_t logger = NULL;
+
+void set_log_handler( log_handler_t log_handler )
 {
-    int max_x;
-	int max_y;
-};
+    logger = log_handler;
+}
 
-#define CFG_SERVER_ADDR "server"
-#define CFG_SERVER_PORT "port"
-
-#define DEFAULT_SERVER_PORT "12729"
-
-char *get_server_addr();
-char *get_server_port();
-char *get_app_name();
-
-int get_screen_config(struct screen_config *cfg);
-
-int is_server();
-
-void load_config();
-
-bool is_test_mode();
-
-int process_cmd_line( int argc, char **argv );
-
-#define IS_TEST_MODE ( is_test_mode() )
-
-#endif
+void do_log( int log_type, char *fmt, ...  )
+{	
+	char msg[ 1000 ];
+	int len = 0;
+	
+	va_list args;
+    va_start( args, fmt );
+	len = vsprintf( msg, fmt, args ); 
+	va_end( args );
+	
+	if ( logger != NULL )
+	{
+	    logger( log_type, msg );
+	}
+	else
+	{
+	    printf( "%s\n", msg );
+	}
+}

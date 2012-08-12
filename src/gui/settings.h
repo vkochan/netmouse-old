@@ -17,37 +17,8 @@
  * 
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
- 
-#ifndef _CONFIG_HEADER_
-#define _CONFIG_HEADER_
 
-#include "types.h"
-
-struct screen_config
-{
-    int max_x;
-	int max_y;
-};
-
-#define CFG_SERVER_ADDR "server"
-#define CFG_SERVER_PORT "port"
-
-#define DEFAULT_SERVER_PORT "12729"
-
-char *get_server_addr();
-char *get_server_port();
-char *get_app_name();
-
-int get_screen_config(struct screen_config *cfg);
-
-int is_server();
-
-void load_config();
-
-bool is_test_mode();
-
-int process_cmd_line( int argc, char **argv );
-
-#define IS_TEST_MODE ( is_test_mode() )
+#ifndef _SETTINGS_HEADER_
+#define _SETTINGS_HEADER_
 
 #endif

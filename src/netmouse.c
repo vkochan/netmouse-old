@@ -22,14 +22,17 @@
  
 #include <windows.h>
 #include <stdio.h>
+#include <tchar.h>
 
 #include "event_pipe.h"
 #include "screen.h"
-#include "process.h"
 #include "config.h"
 #include "log.h"
 
-DECLARE_PROCESS(main_app_loop);
+#ifdef _GUI_
+	#include "gui\taskbar.h"
+	#include "gui\logger.h"
+#endif
 
 /* 
  * processes windows message queue
@@ -38,16 +41,14 @@ DECLARE_PROCESS(main_app_loop);
 void message_loop()
 {
 	MSG message;
-	while (GetMessage(&message,NULL,0,0)) {
+	while ( GetMessage( &message,NULL,0,0 ) ) 
+	{
 		TranslateMessage( &message );
 		DispatchMessage( &message );
 	}
 }
 
-/* 
- * windows messages loop procedure
- */
-DWORD WINAPI main_app_loop(LPVOID lpParm)
+void init_modules()
 {	
 	init_event_pipe();
 	
@@ -55,7 +56,7 @@ DWORD WINAPI main_app_loop(LPVOID lpParm)
 	
    //prevents event sending if its server ... 
    //may be its bad & it should be fixed
-	if (get_server_addr())
+	if ( get_server_addr() )
 	{
 		init_input_handler();
 	}
@@ -63,34 +64,57 @@ DWORD WINAPI main_app_loop(LPVOID lpParm)
 	init_mouse();
 	init_keybd();
 	
+	#ifdef _GUI_
+	    init_taskbar();
+	#endif
+}
+
+void cleanup_modules()
+{
+    cleanup_taskbar();
+    cleanup_input_handler();
+}
+
+void run_main_app_loop()
+{	
+    init_modules();
 	message_loop();
-	
-	cleanup_input_handler();
-	
-	return 0;
+	cleanup_modules();
 }
  
-void run_main_app(int argc, char **cmdl)
+void run_main_app( )
 {	
-	LOG_INFO("NetMouse by Vadim Kochan <vadim4j@gmail.com>\n\n");
+	#ifdef _GUI_
+	    set_log_handler( gui_logger );
+	#endif
 	
-	load_config(argc, cmdl);
+	LOG_INFO("NetMouse by Vadim Kochan <vadim4j@gmail.com>\n\r");
+	
+	load_config();
 	
 	if ( IS_TEST_MODE )
 	{
-	    LOG_INFO("TEST MODE is ON\n");
+	    LOG_INFO( "TEST MODE is ON" );
 	}
 	
-	LOG_INFO("SERVER: %s\n", get_server_addr());
-	LOG_INFO("PORT: %s\n\n", get_server_port());
+	LOG_INFO( "SERVER: %s", get_server_addr() );
+	LOG_INFO( "PORT: %s\n\r", get_server_port() );
 	
-	RUN_PROCESS(main_app_loop, NULL);
-	
-	getchar();
+	run_main_app_loop();
 }
 
-int main(int argc, char **cmdLine)
-{
-	run_main_app(argc, cmdLine);
-	return 0;
-}
+#ifdef _GUI_
+
+	int APIENTRY WinMain(HINSTANCE h_inst, HINSTANCE h_prev_inst, LPSTR cmd_line, int cmd_show)
+	{	
+		run_main_app();
+		return 0;
+	}
+
+#else
+	int main(int argc, char ** argv)
+	{
+	    process_cmd_line( argc, argv );
+		run_main_app();
+	}
+#endif

@@ -88,7 +88,7 @@ void on_recv_keybd_event ( struct input_event *evt )
 {
     if ( !evt )
 	{
-		LOG_ERROR("received empty event \n");
+		LOG_ERROR("received empty event");
 	}
 	
 	if ( IS_TEST_MODE )
@@ -107,7 +107,7 @@ void on_recv_keybd_event ( struct input_event *evt )
 		
 		GetKeyNameText(MAKELONG(0, MapVirtualKey(evt->keybd.vkey, 0)), key_name, 32);
 		
-		LOG_DEBUG("received keybd event [ %s %s ] \n", key_name, action_name );
+		LOG_DEBUG("received keybd event [ %s %s ]", key_name, action_name );
 	}
 	else
 	{
@@ -121,6 +121,6 @@ void init_keybd()
 	
 	if( register_event_receiver( INPUT_KEYBD_EVENT, on_recv_keybd_event ) == 0 )
     {
-	    LOG_DEBUG("registered keyboard event receiver \n");
+	    LOG_DEBUG("registered keyboard event receiver");
 	}
 }
