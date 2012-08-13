@@ -133,7 +133,7 @@ void do_mouse_move( int x, int y )
 	in.mi.time = 0;
 	in.mi.dwExtraInfo = ( ULONG_PTR )NULL;
 	in.mi.dx = x * n_x;
-	in.mi.dy = y * n_y; //yeah, really y means offset from y position ...
+	in.mi.dy = y * n_y;
 	in.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
 	
 	SendInput( 1, &in, sizeof(INPUT) );
