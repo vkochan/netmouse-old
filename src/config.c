@@ -250,6 +250,21 @@ char *config_get_value(FILE *f, char *name)
 	return NULL;
 }
 
+void do_help()
+{
+    printf("netmouse - use your remote computer as your additional screen\n");
+    printf("\noptions:\n");
+    printf("\n-s server_address   : network address  of your remote computer\n");
+    printf("\n-p server_port      : network port where is your netmouse server side is ran\n");
+    printf("                      by default it uses %s port\n", DEFAULT_SERVER_PORT);
+    printf("\n-t                  : use test mode for testing input events localy\n");
+    printf("                      should be turned on automatically if you use localhost\n");
+    printf("                      or local ip address\n");
+    printf("\n-h, -help, --help   : prints help\n");
+    printf("\nAuthor: Vadim Kochan <vadim4j@gmail.com>\n");
+    exit(0);
+}
+
 int process_cmd_line(int argc, char **args)
 {
 	int idx = 1;
@@ -286,9 +301,13 @@ int process_cmd_line(int argc, char **args)
 			
 			server_port = args[ ++idx ];
 		}
-		else if ( strcmp (args[ idx ], "-t" ) == 0 )
+		else if ( strcmp( args[ idx ], "-t" ) == 0 )
 		{
 		    _is_test_mode = TRUE;
+		}
+		else if( ( strcmp( args[ idx ], "-h") == 0) || (strcmp( args[ idx ], "--help") == 0) || (strcmp( args[ idx ], "-help") == 0))		
+		{
+            do_help();
 		}
 		
 		idx++;
@@ -345,7 +364,7 @@ void load_config_file()
 	
 	if (!cfg_file_path)
 	{
-		LOG_ERROR("Cant load netmouse.config file");
+		LOG_WARN("Cant load netmouse.config file");
 		return;
 	}
 	
@@ -353,7 +372,7 @@ void load_config_file()
 	
 	if (!cfg_file_path)
 	{
-		LOG_ERROR("Cant load netmouse.config file");
+		LOG_WARN("Cant load netmouse.config file");
 		return;
 	}
 	
