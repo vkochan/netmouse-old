@@ -40,10 +40,10 @@ HWND create_event_window(char *name, wnd_proc wmain)
     wc.hInstance     = hInstance;
     wc.lpszClassName = name;
      
-    if(!RegisterClassEx(&wc))
+    if( !RegisterClassEx( &wc ) )
     {
         LOG_FATAL("Window Registration Failed!");
-        return -1;
+        return NULL;
     }
     // create message-only window
     hwnd = CreateWindowEx(
@@ -55,10 +55,10 @@ HWND create_event_window(char *name, wnd_proc wmain)
         HWND_MESSAGE, NULL, hInstance, NULL
     );
 	
-    if(!hwnd)
+    if( !hwnd )
     {
         LOG_FATAL("Window Creation Failed!");
-        return -1;
+        return NULL;
     }
 	
 	return hwnd;
@@ -70,9 +70,9 @@ HWND create_window( char *name, char *title, int x, int y, int width, int heigth
 	
 	WNDCLASSEX wClass;
 	ZeroMemory(&wClass,sizeof(WNDCLASSEX));
-	wClass.cbClsExtra=NULL;
+	wClass.cbClsExtra=0;
 	wClass.cbSize=sizeof(WNDCLASSEX);
-	wClass.cbWndExtra=NULL;
+	wClass.cbWndExtra=0;
 	wClass.hbrBackground=(HBRUSH)COLOR_WINDOW;
 	wClass.hCursor=LoadCursor(NULL,IDC_ARROW);
 	wClass.hIcon=NULL;
@@ -83,15 +83,15 @@ HWND create_window( char *name, char *title, int x, int y, int width, int heigth
 	wClass.lpszMenuName=NULL;
 	wClass.style=CS_HREDRAW|CS_VREDRAW;
 
-	if(!RegisterClassEx(&wClass))
+	if( !RegisterClassEx( &wClass ) )
 	{
 		int errn = GetLastError();
 		LOG_FATAL("Window class creation failed.Error = %d", errn);
 		
-		return -1;
+		return NULL;
 	}
 
-	HWND hWnd=CreateWindowEx(NULL,
+	HWND hWnd = CreateWindowEx(0,
 			name,
 			title,
 			styles,
@@ -104,12 +104,12 @@ HWND create_window( char *name, char *title, int x, int y, int width, int heigth
 			hInst,
 			NULL);
 
-	if(!hWnd)
+	if( !hWnd )
 	{
 		int errn = GetLastError();
 		LOG_FATAL( "Window Creation Failed.Error=%d",  errn );
 		
-		return -1;
+		return NULL;
 	}
 	
 	return hWnd;

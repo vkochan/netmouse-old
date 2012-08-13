@@ -170,8 +170,6 @@ DWORD WINAPI client_connector( void *data )
 {
 	struct event_pipe *evt_pipe = (struct event_pipe *)data;
 	int result;
-    fd_set write_s;
-    struct timeval time_out;
 	
 	if ( get_event_pipe_state( evt_pipe ) == EVENT_PIPE_CONNECTING )
 	{
@@ -179,11 +177,6 @@ DWORD WINAPI client_connector( void *data )
 	}
 	
 	set_event_pipe_state( evt_pipe, EVENT_PIPE_CONNECTING );
-	
-	FD_ZERO( &write_s );
-    FD_SET( evt_pipe->sck, &write_s ); 
-    time_out.tv_sec = 0;
-    time_out.tv_usec = 500000;
 	
 	while(1)
 	{

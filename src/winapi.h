@@ -21,9 +21,9 @@
 #ifndef _WINAPI_HEADER_
 #define _WINAPI_HEADER_
 
-typedef BOOL CALLBACK (* wnd_proc )( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam );
+typedef LRESULT CALLBACK (* wnd_proc )( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam );
 
-HWND create_event_window(char *name, wnd_proc wmain);
+HWND create_event_window( char *name, wnd_proc wmain );
 
 HWND create_window( char *name, char *title, int x, int y, int width, int heigth, int styles, wnd_proc wmain );
 
