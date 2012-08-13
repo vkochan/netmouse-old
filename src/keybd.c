@@ -23,7 +23,8 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <assert.h>
+ 
 #include "input_handler.h"
 #include "screen.h"
 #include "log.h"
@@ -84,6 +85,27 @@ int on_keybd_input_handler(int vkey, int flags)
 	return 1;
 }
 
+void log_keybd_event( struct input_event *evt )
+{
+    assert( evt != NULL );
+
+    char key_name[ 32 ] = { 0 };
+	char *action_name = NULL;
+
+    if ( evt->action == KEYBD_PRESS_DOWN )
+    {
+	    action_name = "PRESSED UP";
+	}
+	else if ( evt->action == KEYBD_PRESS_UP )
+	{
+	    action_name = "PRESSED DOWN";
+	}
+	
+	GetKeyNameText(MAKELONG(0, MapVirtualKey(evt->keybd.vkey, 0)), key_name, 32);
+	
+	LOG_DEBUG("received keybd event [ %s %s ]", key_name, action_name );
+}
+
 void on_recv_keybd_event ( struct input_event *evt )
 {
     if ( !evt )
@@ -93,21 +115,7 @@ void on_recv_keybd_event ( struct input_event *evt )
 	
 	if ( IS_TEST_MODE )
 	{
-	    char key_name[ 32 ] = { 0 };
-		char *action_name = NULL;
-
-        if ( evt->action == KEYBD_PRESS_DOWN )
-        {
-		    action_name = "PRESSED UP";
-		}
-		else if ( evt->action == KEYBD_PRESS_UP )
-		{
-		    action_name = "PRESSED DOWN";
-		}
-		
-		GetKeyNameText(MAKELONG(0, MapVirtualKey(evt->keybd.vkey, 0)), key_name, 32);
-		
-		LOG_DEBUG("received keybd event [ %s %s ]", key_name, action_name );
+	    log_keybd_event( evt );
 	}
 	else
 	{
