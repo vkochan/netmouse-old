@@ -1,11 +1,11 @@
 CC=gcc
 CFLAGS=-c
 #LDFLAGS=-mwindows
-LDFLAGS=-mconsole
+LDFLAGS=-mconsole -L ..\libs
 
 SOURCES=netmouse.c input_handler.c mouse.c keybd.c event_pipe.c screen.c config.c log.c winapi.c
 
-LIBS=-lws2_32 -lmswsock -ladvapi32	
+LIBS=-lws2_32 -lmswsock -ladvapi32 -lpowrprof	
 
 OBJECTS=$(SOURCES:.c=.o)
 OBJECTS+=netmouse.res

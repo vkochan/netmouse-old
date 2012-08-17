@@ -26,7 +26,12 @@
 #include "mouse.h"
 #include "log.h"
 
+//#include <ntstatus.h>
+
+#define WIN32_NO_STATUS
+
 #include <windows.h>
+#include <powrprof.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -42,6 +47,28 @@ static struct screen* screen_array[3] = { 0 };
 #define MAX_EVENT_RECEIVERS 2
 
 void (* event_receivers[ MAX_EVENT_RECEIVERS ]) ( struct input_event * ) = { 0 };
+
+/*
+ * wakeup's screen if it is sleeping...
+ * thanks to this post:
+ * http://cboard.cprogramming.com/windows-programming/103275-monitor-state-detection.html#post755126
+ */
+void wakeup_screen_if_sleep()
+{
+    SYSTEM_POWER_CAPABILITIES spc = {0};
+    NTSTATUS res = CallNtPowerInformation(SystemPowerCapabilities, 0, 0, 
+                                          (PVOID)&spc, sizeof(spc));
+    if (res != STATUS_SUCCESS)
+    {
+        LOG_ERROR( "CallNtPowerInformation() failed, status = %d, le = %d", res, GetLastError() );
+        return;
+    }
+ 
+    if (spc.SystemS3 != FALSE)
+    {
+        SendMessage( HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, (LPARAM)-1 );
+    }
+}
 
 struct screen *get_remote_screen()
 {
@@ -90,6 +117,8 @@ void do_event_receiving( struct input_event *evt )
 		return;
 	}
 	
+	wakeup_screen_if_sleep();
+
 	do
 	{
 	    if ( event_receivers[ i ] && ( i == evt->type ) )
