@@ -26,13 +26,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+//global log handler
 static log_handler_t logger = NULL;
 
-void set_log_handler( log_handler_t log_handler )
+/*
+ * set logging handler
+ * printf is used as default logger
+ */
+void set_logger( log_handler_t log_handler )
 {
     logger = log_handler;
 }
 
+/*
+ * logs formatted messages for log handler
+ * if log handler is NULL then printf is used
+ * as default
+ */
 void do_log( int log_type, char *fmt, ...  )
 {	
 	char msg[ 1000 ];

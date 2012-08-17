@@ -74,7 +74,7 @@ void cleanup_modules()
     #ifdef _GUI_
     	cleanup_taskbar();
     #endif
-    	
+
     cleanup_input_handler();
 }
 
@@ -88,7 +88,7 @@ void run_main_app_loop()
 void run_main_app( )
 {	
 	#ifdef _GUI_
-	    set_log_handler( gui_logger );
+	    set_logger( gui_logger );
 	#endif
 	
 	LOG_INFO("NetMouse by Vadim Kochan <vadim4j@gmail.com>\n\r");
