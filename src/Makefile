@@ -19,7 +19,7 @@ EXECUTABLE=netmouse
 all: $(SOURCES) $(EXECUTABLE)
 	
 $(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) $(GUI)  $(LIBS) -o $@
+	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
