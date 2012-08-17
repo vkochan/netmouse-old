@@ -386,8 +386,8 @@ void send_cursor_move( int x, int y )
 	struct input_event *evt = (struct input_event *)malloc(sizeof(struct input_event));
 	evt->type = INPUT_MOUSE_EVENT;
 	evt->action = EVENT_MOUSE_MOVE;
-	evt->point.x = x;
-	evt->point.y = y;
+	evt->mouse.x = x;
+	evt->mouse.y = y;
 	
 	send_remote_event(evt);
 	

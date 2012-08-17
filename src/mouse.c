@@ -157,32 +157,58 @@ void do_mouse_click ( int btn_click )
 }
 
 /*
+ * emulates mouse wheel
+ */
+void do_mouse_wheel( int data )
+{
+	INPUT in;
+	
+	in.type = INPUT_MOUSE;
+	in.mi.time = 0;
+	in.mi.dwExtraInfo = ( ULONG_PTR )NULL;
+	in.mi.dx = 0;
+	in.mi.dy = 0;
+	in.mi.mouseData = data;
+	in.mi.dwFlags = MOUSEEVENTF_WHEEL;
+	
+	SendInput( 1, &in, sizeof(INPUT) );
+}
+
+/*
  * creates event_event object for mouse click event
  * and sends it to network event sender layer
  */
-void handle_mouse_click ( int btn_click )
+void handle_mouse_click ( int btn_click , int data)
 {
 	struct input_event *evt = (struct input_event *)malloc(sizeof(struct input_event));
 	evt->type = INPUT_MOUSE_EVENT;
 	evt->action = convert_to_mouse_net_event( btn_click );
-	evt->point.x = 0;
-	evt->point.y = 0;
+	evt->mouse.x = 0;
+	evt->mouse.y = 0;
+    
+    if( evt->action == EVENT_MOUSE_WHEEL )
+    {
+    	//little fix for wheel delta value
+    	//why it does not set -120 from raw handler ?
+    	//may be bcouse it uses unsigned data type for this value ?  
+        evt->mouse.wheel = ( data == 65416 ? -WHEEL_DELTA : data );
+    }
 
 	send_remote_event(evt);
 	
 	free(evt);
 }
 
-int on_mouse_input_handler ( int dx, int dy, int flags )
+int on_mouse_input_handler ( int dx, int dy, int flags, int data )
 {
 
 	update_screen_cursor ( dx, dy );
 
-	if ( is_on_remote_screen() )
+	if( is_on_remote_screen() )
 	{
-	    if ( flags > 0 )
+	    if( flags > 0 )
 	    {
-	        handle_mouse_click( flags );
+	        handle_mouse_click( flags, data );
 	    }
 
 	    return 1;
@@ -204,20 +230,24 @@ void on_recv_mouse_event ( struct input_event *evt )
 		{
 			if ( IS_TEST_MODE )
 			{
-			    LOG_DEBUG( "received mouse event: move [ x=%d, y=%d ]", evt->point.x, evt->point.y );
+			    LOG_DEBUG( "received mouse event: move [ x=%d, y=%d ]", evt->mouse.x, evt->mouse.y );
 			}
 			else
 			{
-			    do_mouse_move( evt->point.x, evt->point.y );
+			    do_mouse_move( evt->mouse.x, evt->mouse.y );
 			}
 		}
-		else //its mouse click
+		else
 		{
 			if ( IS_TEST_MODE )
 			{
 			    LOG_DEBUG( "received mouse event: click [ %s ]", get_action_name( evt->action ) );
 			}
-			else
+			if ( evt->action == EVENT_MOUSE_WHEEL )
+			{
+				do_mouse_wheel( evt->mouse.wheel );
+			}
+			else //its mouse click
 			{
 			    do_mouse_click( evt->action );
 			}

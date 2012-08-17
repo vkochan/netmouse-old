@@ -32,15 +32,15 @@
 #define EVENT_MOUSE_RIGHT_UP			6
 #define EVENT_MOUSE_WHEEL				7
 
-void handle_mouse_move(int x, int y);
+void handle_mouse_move( int x, int y, int data );
 
-void handle_mouse_click(int btn_click);
+void handle_mouse_click( int btn_click, int data );
 
 bool is_mouse_on_remote();
 
-void do_mouse_move(int x, int y);
+void do_mouse_move( int x, int y );
 
-void do_mouse_click(int btn_click);
+void do_mouse_click( int btn_click );
 
 void init_mouse();
 

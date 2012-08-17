@@ -23,23 +23,19 @@
 
 #define INPUT_MOUSE_EVENT				0
 #define INPUT_KEYBD_EVENT				1
+#define INPUT_DATA_EVENT                2
 
-struct point
+struct mouse
 {
-	int x;
+    int x;
 	int y;
+    int wheel;
 };
 
 struct keybd
 {
 	int vkey;
 	int flags;
-};
-
-struct data
-{
-	unsigned int size;
-	void *ptr;
 };
 
 struct input_event
@@ -49,7 +45,7 @@ struct input_event
 	
 	union
 	{
-		struct point point;
+		struct mouse mouse;
 		struct keybd keybd;
 	};
 };

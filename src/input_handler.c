@@ -56,11 +56,11 @@ void register_keybd_handler ( keybd_handler_t handler )
     }
 }
 
-int do_handle_mouse ( int dx, int dy, int flags )
+int do_handle_mouse ( int dx, int dy, int flags, int data )
 {
     if ( on_mouse_handler )
     {
-        return on_mouse_handler (dx, dy, flags );
+        return on_mouse_handler (dx, dy, flags, data );
     }
 	
 	return 0;
@@ -115,7 +115,7 @@ LRESULT CALLBACK raw_input_device_handler(HWND hwnd, UINT msg, WPARAM wParam, LP
 				if (buffer->header.dwType == RIM_TYPEMOUSE)
 				{
 					is_input_blocked = do_handle_mouse( buffer->data.mouse.lLastX, 
-						buffer->data.mouse.lLastY, buffer->data.mouse.usButtonFlags);     
+						buffer->data.mouse.lLastY, buffer->data.mouse.usButtonFlags, buffer->data.mouse.usButtonData);     
 				}
             }
          
