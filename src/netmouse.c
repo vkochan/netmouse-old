@@ -71,7 +71,10 @@ void init_modules()
 
 void cleanup_modules()
 {
-    cleanup_taskbar();
+    #ifdef _GUI_
+    	cleanup_taskbar();
+    #endif
+    	
     cleanup_input_handler();
 }
 
