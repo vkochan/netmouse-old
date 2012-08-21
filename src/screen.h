@@ -47,7 +47,7 @@ struct screen
     int type;                    //  client or server
     int orient;                  //  left or right or combined left | right
     int status;                  // connected, disconnected, active, inactive
-    struct event_pipe *evt_pipe;
+    struct net_pipe *event_pipe;
     char *addr;
     char *port;
 };
@@ -59,13 +59,13 @@ void update_screen_cursor( int dx, int dy );
 
 int setup_remote_screen( char *addr, char *port, int orient );
 
-int setup_shared_screen ( char *port );
+int setup_shared_screen( char *port );
 
-int send_event ( struct input_event *evt );
+int send_event( struct input_event *evt );
 
-void init_screen ();
+void init_screen();
 
-bool is_on_remote_screen ();
+bool is_on_remote_screen();
 
 int register_event_receiver( int evt_type, void (* on_recv_event) ( struct input_event * ) );
 

@@ -130,6 +130,7 @@ LRESULT CALLBACK raw_input_device_handler(HWND hwnd, UINT msg, WPARAM wParam, LP
         default:
             return DefWindowProc(hwnd, msg, wParam, lParam);
     }
+    
     return 0;
 }
 

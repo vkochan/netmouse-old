@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <tchar.h>
 
-#include "event_pipe.h"
+#include "net_pipe.h"
 #include "screen.h"
 #include "config.h"
 #include "log.h"
@@ -50,7 +50,7 @@ void message_loop()
 
 void init_modules()
 {	
-	init_event_pipe();
+	init_net_pipe();
 	
 	init_screen();
 	

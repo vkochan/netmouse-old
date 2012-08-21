@@ -231,24 +231,31 @@ void on_recv_mouse_event ( struct input_event *evt )
 			if ( IS_TEST_MODE )
 			{
 			    LOG_DEBUG( "received mouse event: move [ x=%d, y=%d ]", evt->mouse.x, evt->mouse.y );
+			    return;
 			}
-			else
-			{
-			    do_mouse_move( evt->mouse.x, evt->mouse.y );
-			}
+			
+			do_mouse_move( evt->mouse.x, evt->mouse.y );
 		}
 		else
 		{
-			if ( IS_TEST_MODE )
-			{
-			    LOG_DEBUG( "received mouse event: click [ %s ]", get_action_name( evt->action ) );
-			}
 			if ( evt->action == EVENT_MOUSE_WHEEL )
 			{
+    			if ( IS_TEST_MODE )
+				{
+				    LOG_DEBUG( "received mouse wheel  [ %d ]", evt->mouse.wheel );
+				    return;
+				}
+
 				do_mouse_wheel( evt->mouse.wheel );
 			}
 			else //its mouse click
 			{
+    			if ( IS_TEST_MODE )
+				{
+				    LOG_DEBUG( "received mouse event: click [ %s ]", get_action_name( evt->action ) );
+				    return;
+				}
+
 			    do_mouse_click( evt->action );
 			}
 		}

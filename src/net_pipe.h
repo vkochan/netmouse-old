@@ -31,37 +31,48 @@
 #define RECV_SUCCESS 2
 #define RECV_FAILURE 3
 
-#define EVENT_PIPE_CREATED           1
-#define EVENT_PIPE_CONNECTED         2
-#define EVENT_PIPE_DISCONNECTED      3
-#define EVENT_PIPE_CONNECTING        4
-#define EVENT_PIPE_CLOSED            5
-#define EVENT_PIPE_LISTENNING        6
-#define EVENT_PIPE_ACCEPTED          7
+#define NET_PIPE_CREATED           1
+#define NET_PIPE_CONNECTED         2
+#define NET_PIPE_DISCONNECTED      3
+#define NET_PIPE_CONNECTING        4
+#define NET_PIPE_CLOSED            5
+#define NET_PIPE_LISTENNING        6
+#define NET_PIPE_ACCEPTED          7
 
-#define EVENT_PIPE_SEND 1
-#define EVENT_PIPE_RECV 2
+#define NET_PIPE_SERVER 1
+#define NET_PIPE_CLIENT 2
 
-struct event_pipe
+#define OPT_PIPE_ASYNC    0
+#define OPT_PIPE_STREAM   1
+#define OPT_PIPE_PACKET   2
+
+#define PIPE_PROT_TCP 0
+#define PIPE_PROT_UDP 1
+
+struct net_pipe
 {
 	SOCKET sck;
 	SOCKET from_sck;
 	int conn_state;
 	struct addrinfo *addr_info;
-	int op_status;
-	int error;
-	int type;
-	void *obj; //object which is uses event pipe
-	void (* on_recv_event ) ( struct input_event *evt );
-	void (* on_conn_state ) ( struct event_pipe *evt_pipe ) ;
+	int op_status;    //last operation status
+	int error;    //windows error number
+	int type;    //server or client
+	int opt;    //options: async, stream, packet
+	int prot;    //protocol: tcp (default), udp
+	int pkt_size;
+	void *owner;    //object which owns net pipe
+	void (* on_recv_data ) ( void *data, int len );
+	void (* on_conn_state ) ( struct net_pipe *pipe );
+	void (* on_error ) ( int errno );
 };
 
-int do_send_event_pipe(struct event_pipe *evt_pipe, struct input_event *evt);
+int send_data( struct net_pipe *pipe, void *data, int len );
 
-struct event_pipe * create_event_pipe(char *addr, char *port, int type);
+struct net_pipe *create_net_pipe( char *addr, char *port, int type );
 
-int open_event_pipe(struct event_pipe *evt_pipe);
+int open_net_pipe( struct net_pipe *pipe );
 
-void reopen_event_pipe ( struct event_pipe *evt_pipe );
+void reopen_pipe ( struct net_pipe *pipe );
 
 #endif

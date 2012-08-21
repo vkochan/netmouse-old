@@ -21,12 +21,10 @@
 #include "common.h"
 #include "screen.h"
 #include "input_event.h"
-#include "event_pipe.h"
+#include "net_pipe.h"
 #include "config.h"
 #include "mouse.h"
 #include "log.h"
-
-//#include <ntstatus.h>
 
 #define WIN32_NO_STATUS
 
@@ -34,6 +32,7 @@
 #include <powrprof.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 int virt_x = 0;
 int virt_y = 0;
@@ -107,9 +106,11 @@ int unregister_event_receiver( int evt_type )
 	return 0;
 }
 
-void do_event_receiving( struct input_event *evt )
+void do_event_receiving( void *data, int len )
 {	
-	int i = 0;
+	assert( len == sizeof( struct input_event ) );
+
+	struct input_event *evt = ( struct input_event *)data;
 	
 	if ( !evt )
 	{
@@ -118,6 +119,8 @@ void do_event_receiving( struct input_event *evt )
 	}
 	
 	wakeup_screen_if_sleep();
+    
+    int i = 0;
 
 	do
 	{
@@ -129,7 +132,7 @@ void do_event_receiving( struct input_event *evt )
 	} while ( ++i < MAX_EVENT_RECEIVERS );
 }
 
-//HACK ... its needed by event_pipe module to unblock
+//HACK ... its needed to unblock
 //input events for apps if we lost connection with server
 void disable_remote_events()
 {
@@ -263,7 +266,7 @@ static struct screen *clone_screen ( struct screen *scr )
 	}
     
 	to_scr->type = scr->type;
-	to_scr->evt_pipe = scr->evt_pipe;
+	to_scr->event_pipe = scr->event_pipe;
 	to_scr->orient = scr->orient;
 	to_scr->status = scr->status;
 	to_scr->addr = scr->addr;
@@ -272,55 +275,64 @@ static struct screen *clone_screen ( struct screen *scr )
     return to_scr;
 }
 
-static void on_connection_changed ( struct event_pipe *evt_pipe )
+static void on_connection_changed ( struct net_pipe *pipe )
 {	
-	if ( !evt_pipe )
+	if ( !pipe )
 	    return;
 	
-	if ( !evt_pipe->obj )
+	if ( !pipe->owner )
 	    return;
 		
-	struct screen *scr = ( struct screen * )evt_pipe->obj;
+	struct screen *scr = ( struct screen * )pipe->owner;
 	
 	if ( !scr )
 	{
 	    return;
 	}
 	
-	switch ( evt_pipe->conn_state )  
+	switch ( pipe->conn_state )  
 	{
        
-		case EVENT_PIPE_CONNECTED :
+		case NET_PIPE_CONNECTED :
 			scr->status = REMOTE_SCREEN_CONNECTED;
 			LOG_INFO("Connected to remote screen");
 			break;
 
-		case EVENT_PIPE_DISCONNECTED :
+		case NET_PIPE_DISCONNECTED :
 			scr->status = REMOTE_SCREEN_DISCONNECTED;
+			disable_remote_events();
 			break;
 
-		case EVENT_PIPE_CONNECTING :
+		case NET_PIPE_CONNECTING :
 			scr->status = REMOTE_SCREEN_CONNECTING;
 			break;
 			
-		case EVENT_PIPE_LISTENNING :
+		case NET_PIPE_LISTENNING :
 			scr->status = REMOTE_SCREEN_WAITING;
 			LOG_INFO("Waiting for events ...");
 			break;
 			
-        case EVENT_PIPE_ACCEPTED :
+        case NET_PIPE_ACCEPTED :
 		    scr->status = REMOTE_SCREEN_CONNECTED;
 			LOG_INFO("Connected to sending event pipe");
 			break;
 	}
 }
 
+void setup_event_pipe( struct net_pipe *pipe )
+{
+    assert( pipe != NULL );
+
+    pipe->opt |= OPT_PIPE_PACKET;
+    pipe->pkt_size = sizeof( struct input_event );
+}
+
 int setup_remote_screen ( char *addr, char *port, int orient )
 {
-	struct event_pipe *evt_pipe = create_event_pipe( addr, port, EVENT_PIPE_SEND );
+	struct net_pipe *pipe = create_net_pipe( addr, port, NET_PIPE_CLIENT );
 	struct screen *remote_scr;
     
-	if ( !evt_pipe )
+	if ( !pipe )
 	{
 		return -1;
 	}
@@ -332,12 +344,14 @@ int setup_remote_screen ( char *addr, char *port, int orient )
 		return -1;
 	}
     
-	evt_pipe->on_conn_state = on_connection_changed;
-	evt_pipe->obj = remote_scr;
+	pipe->on_conn_state = on_connection_changed;
+	pipe->owner = remote_scr;
 	
+	setup_event_pipe( pipe );
+
 	memset( remote_scr, 0, sizeof( struct screen ) ); 
 
-	remote_scr->evt_pipe = evt_pipe;
+	remote_scr->event_pipe = pipe;
 	remote_scr->orient = orient;
 	remote_scr->status = REMOTE_SCREEN_INIT;
 	remote_scr->addr = addr;
@@ -354,7 +368,7 @@ int setup_remote_screen ( char *addr, char *port, int orient )
 		screen_array[ RIGHT_SCREEN ] = clone_screen( remote_scr );
     }
 
-	open_event_pipe( evt_pipe );
+	open_net_pipe( pipe );
 	
     return 0;
 }
@@ -363,10 +377,10 @@ int setup_remote_screen ( char *addr, char *port, int orient )
 
 int setup_shared_screen ( char *port )
 {
-	struct event_pipe *evt_pipe = create_event_pipe( NULL, port, EVENT_PIPE_RECV );
+	struct net_pipe *pipe = create_net_pipe( NULL, port, NET_PIPE_SERVER );
     struct screen *shrd_screen;
 	
-	if ( !evt_pipe )
+	if ( !pipe )
 	{
         	return -1;
 	}
@@ -378,13 +392,15 @@ int setup_shared_screen ( char *port )
         	return -1;
 	}
 
-	evt_pipe->on_recv_event = do_event_receiving;
-	evt_pipe->on_conn_state = on_connection_changed;
-	evt_pipe->obj = shrd_screen;
+	pipe->on_recv_data = do_event_receiving;
+	pipe->on_conn_state = on_connection_changed;
+	pipe->owner = shrd_screen;
+	
+	setup_event_pipe( pipe );
 	
 	memset( shrd_screen, 0, sizeof( struct screen ) );
 
-	shrd_screen->evt_pipe = evt_pipe;
+	shrd_screen->event_pipe = pipe;
 	shrd_screen->status = REMOTE_SCREEN_INIT;
 	shrd_screen->addr = NULL;
 	shrd_screen->port = port;
@@ -392,7 +408,7 @@ int setup_shared_screen ( char *port )
 	
 	LOG_DEBUG("opening shared screen ...");
 	
-	open_event_pipe( evt_pipe );
+	open_net_pipe( pipe );
 	
     return 0;
 }
@@ -403,7 +419,7 @@ int send_remote_event ( struct input_event *evt )
 	{
 		if ( screen_array[ curr_scr ] != NULL )
 		{
-			return do_send_event_pipe( screen_array[ curr_scr ]->evt_pipe, evt ) ;
+			return send_data( screen_array[ curr_scr ]->event_pipe, evt, sizeof( struct input_event ) ) ;
 		}
 	}
 
