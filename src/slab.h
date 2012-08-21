@@ -21,13 +21,18 @@
 #ifndef _SLAB_HEADER_
 #define _SLAB_HEADER_
 
+//allocator for slab objects with fixed size
 struct slab
 {
     int obj_size;
     int max_count;
-    void *slab_buff;
+    void *cache;
 };
 
+/*
+ * describes slab item which keeps
+ * info about particular allocated object
+ */
 struct slab_obj
 {
 	int idx;
@@ -35,10 +40,28 @@ struct slab_obj
 	bool is_used;
 };
 
+/*
+ * initializes slab allocator
+ * allocates piece of memory for caching
+ * slab objects
+ */
 struct slab *alloc_slab( int obj_size, int max_count );
+
+/*
+ * frees allocated memory for slab objects
+ */ 
 void free_slab( struct slab *sl );
 
+/*
+ * gets first unused slab object
+ */
 struct slab_obj *slab_alloc_obj( struct slab *sl );
+
+/*
+ * frees particular slab object in slab allocator
+ * actually slab object will be marked as unused
+ * and filled with zero's
+ */
 void  slab_free_obj( struct slab_obj *obj );
 
 #endif

@@ -18,28 +18,34 @@
  * Author:   Vadim Kochan <vadim4j@gmail.com>
  */
 
-#include "common.h"
-#include "types.h"
+#ifndef _LIST_HEADER_
+#define _LIST_HEADER_
 
-#include <windows.h>
-#include <stdlib.h>
+struct list_head;
+struct list_item;
 
-#include "slab.h"
-
-/*
- * initializes slab allocator
- * allocates piece of memory for caching
- * slab objects
- */
-struct slab *alloc_slab( int obj_size, int max_count )
+struct list
 {
-    struct slab *sl = (struct slab *)malloc( sizeof( struct slab ) );
+    struct list_item *head;
+    int count;    
+};
 
-    assert( sl != NULL );
+struct list_item
+{
+    struct list_item *next;
+	struct list_item *prev;
+	void *obj;
+	struct list *hlist; 
+};
 
-    memset( sl, 0, sizeof( struct sl ) );
+struct list *create_list();
+void free_list( struct list *l );
 
-    sl->obj_size = obj_size;
-    sl->max_count = max_count;
-    sl->cache = malloc( obj_size * max_count );
-}
+int list_add( struct list *l, void *obj );
+void list_del( struct list *l, void *obj );
+void list_del_at( struct list *l, int idx );
+
+//void list_push( struct list *l, void *data );
+//void list_pop (struct list *l, void *data );
+
+#endif

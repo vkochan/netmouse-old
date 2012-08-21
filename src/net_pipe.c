@@ -97,10 +97,9 @@ DWORD WINAPI pipe_receiver( void *data )
 		return 1;
 	}
 	
-
 	struct data_hdr hdr = { 0 };
     void *pkt_buff = malloc( pipe->pkt_size );
-    memset( pkt_size, 0 , pipe->pkt_size );
+    memset( pkt_buff, 0 , pipe->pkt_size );
 
 	// Receive until the peer shuts down the connection
 	do {
