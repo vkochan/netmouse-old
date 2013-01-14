@@ -21,6 +21,7 @@
 #include "common.h"
 #include "types.h"
 
+#include <assert.h>
 #include <windows.h>
 #include <stdlib.h>
 
@@ -37,7 +38,7 @@ struct slab *alloc_slab( int obj_size, int max_count )
 
     assert( sl != NULL );
 
-    memset( sl, 0, sizeof( struct sl ) );
+    memset( sl, 0, sizeof( struct slab ) );
 
     sl->obj_size = obj_size;
     sl->max_count = max_count;

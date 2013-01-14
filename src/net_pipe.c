@@ -107,7 +107,7 @@ DWORD WINAPI pipe_receiver( void *data )
 		//first of all lets get our data_hdr which tell us
 		//how much data we should receive from pipe 
 		
-		if ( recv_data_hdr( pipe->from_sck, &hdr ) <= 0 )
+		if ( recv_hdr( pipe->from_sck, &hdr ) <= 0 )
 		{
 			goto recv_err;
 		}
@@ -134,8 +134,9 @@ DWORD WINAPI pipe_receiver( void *data )
 			}
 		}
 
-		pipe->on_recv_data( recvd_buffer, recvd_bytes );		
-
+		pipe->on_recv_data( recvd_buffer, recvd_bytes );
+        
+        free(recvd_buffer);
 	} while (1);
 
 recv_err:
